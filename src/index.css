@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { font-family: 'Inter', system-ui, sans-serif; }
+body { margin: 0; background-color: #f8fafc; color: #0f172a; }
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-primary { @apply btn bg-primary-600 text-white hover:bg-primary-700 active:scale-[0.98] shadow-sm; }
+  .btn-secondary { @apply btn bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 active:scale-[0.98]; }
+  .btn-danger { @apply btn bg-error-50 text-error-700 border border-error-200 hover:bg-error-100; }
+  .btn-accent { @apply btn bg-accent-600 text-white hover:bg-accent-700 active:scale-[0.98] shadow-sm; }
+  .card { @apply bg-white rounded-xl border border-slate-200 shadow-sm; }
+  .input { @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:outline-none transition; }
+  .label { @apply block text-sm font-medium text-slate-700 mb-1; }
+  .badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium; }
+}
+
+.fade-in { animation: fadeIn 0.25s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+.alert-pulse { animation: alertPulse 1.2s ease-in-out infinite; }
+@keyframes alertPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+  50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+}

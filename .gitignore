@@ -1,0 +1,57 @@
+﻿# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment variables (CRITICAL — never commit Supabase keys/secrets)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Build output
+dist/
+dist-ssr/
+build/
+out/
+
+# Vite
+.vite/
+*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing / coverage
+coverage/
+
+# Supabase local dev
+supabase/.branches
+supabase/.temp
+
+# Misc
+*.tgz
+.cache/
