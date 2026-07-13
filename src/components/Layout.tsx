@@ -28,13 +28,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex bg-slate-50">
       <aside className="hidden md:flex w-60 flex-col bg-white border-r border-slate-200 shrink-0">
-        <div className="flex items-center gap-2 px-5 h-16 border-b border-slate-200">
-          <div className="w-9 h-9 rounded-lg bg-primary-600 flex items-center justify-center text-white">
+        <div className="flex items-center gap-2 px-5 h-16 border-b border-slate-200 bg-blue-600">
+          <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center text-white">
             <CrossIcon />
           </div>
           <div>
-            <p className="font-semibold text-slate-800 leading-tight">MediRemind</p>
-            <p className="text-xs text-slate-400">Smart Medical Reminder</p>
+            <p className="font-semibold text-white leading-tight">MediRemind</p>
+            <p className="text-xs text-blue-100">Smart Medical Reminder</p>
           </div>
         </div>
         <nav className="flex-1 py-4 px-3 space-y-1">
@@ -62,14 +62,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-slate-200 h-14 flex items-center justify-between px-4">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-blue-600 border-b border-slate-200 h-14 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center text-white">
+          <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white">
             <CrossIcon />
           </div>
-          <span className="font-semibold text-slate-800">MediRemind</span>
+          <span className="font-semibold text-white">MediRemind</span>
         </div>
-        <button onClick={() => setMobileOpen((v) => !v)} className="p-2 rounded-lg hover:bg-slate-100" aria-label="Toggle menu">
+        <button onClick={() => setMobileOpen((v) => !v)} className="p-2 rounded-lg hover:bg-blue-700 text-white" aria-label="Toggle menu">
           <MenuIcon />
         </button>
       </div>

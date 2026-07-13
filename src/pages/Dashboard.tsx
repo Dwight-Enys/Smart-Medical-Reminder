@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getTodayDoses, formatTime, formatDate, type ScheduledDose } from '../lib/time'
 import { playBeep } from '../lib/alert'
+import { useAuth } from '../contexts/AuthenContext'
 import type { Medication, Reminder, Appointment, MedicationHistory } from '../types'
 
 export default function Dashboard() {
+  const { user } = useAuth()
   const [medications, setMedications] = useState<Medication[]>([])
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -52,9 +54,13 @@ export default function Dashboard() {
 
   async function quickAddMedication() {
     if (!newMed.name.trim()) return
-    const { data } = await supabase.from('medications').insert({
-      name: newMed.name.trim(), dosage: newMed.dosage || null, form: newMed.form,
+    const { data, error } = await supabase.from('medications').insert({
+      name: newMed.name.trim(), dosage: newMed.dosage || null, form: newMed.form, user_id: user?.id,
     }).select().single()
+    if (error) {
+      console.error('Failed to save medication:', error.message)
+      return
+    }
     if (data) {
       await supabase.from('reminders').insert({
         medication_id: data.id, reminder_times: ['08:00'], frequency: 'daily', meal_relation: 'none',
@@ -83,9 +89,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
-        <p className="text-slate-500 text-sm mt-1">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+      <div className="bg-blue-600 rounded-xl px-5 py-4 -mx-1">
+        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        <p className="text-blue-100 text-sm mt-1">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

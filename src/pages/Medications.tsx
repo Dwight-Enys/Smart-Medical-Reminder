@@ -8,6 +8,12 @@ import Modal from '../components/Modal'
 
 const FORMS = ['Tablet', 'Capsule', 'Syrup', 'Injection', 'Inhaler', 'Drops', 'Topical', 'Other']
 
+function nextDay(dateStr: string) {
+  const d = new Date(`${dateStr}T00:00:00`)
+  d.setDate(d.getDate() + 1)
+  return d.toISOString().slice(0, 10)
+}
+
 export default function Medications() {
   const { user } = useAuth()
   const [meds, setMeds] = useState<Medication[]>([])
@@ -15,6 +21,7 @@ export default function Medications() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Medication | null>(null)
   const [form, setForm] = useState({ name: '', dosage: '', form: 'Tablet', reason: '', start_date: '', end_date: '', notes: '' })
+  const [dateError, setDateError] = useState('')
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('medications').select('*').order('created_at', { ascending: false })
@@ -27,17 +34,24 @@ export default function Medications() {
   function openAdd() {
     setEditing(null)
     setForm({ name: '', dosage: '', form: 'Tablet', reason: '', start_date: '', end_date: '', notes: '' })
+    setDateError('')
     setModalOpen(true)
   }
 
   function openEdit(m: Medication) {
     setEditing(m)
     setForm({ name: m.name, dosage: m.dosage ?? '', form: m.form ?? 'Tablet', reason: m.reason ?? '', start_date: m.start_date ?? '', end_date: m.end_date ?? '', notes: m.notes ?? '' })
+    setDateError('')
     setModalOpen(true)
   }
 
   async function save() {
     if (!form.name.trim()) return
+    if (form.start_date && form.end_date && form.end_date <= form.start_date) {
+      setDateError('End date must be after the start date.')
+      return
+    }
+    setDateError('')
     const payload = {
       name: form.name.trim(), dosage: form.dosage || null, form: form.form,
       reason: form.reason || null, start_date: form.start_date || null, end_date: form.end_date || null, notes: form.notes || null,
@@ -134,13 +148,29 @@ export default function Medications() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Start Date</label>
-              <input type="date" className="input" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+              <input
+                type="date" className="input" value={form.start_date}
+                onChange={(e) => {
+                  const start_date = e.target.value
+                  setDateError('')
+                  setForm((f) => ({
+                    ...f,
+                    start_date,
+                    end_date: start_date && f.end_date && f.end_date <= start_date ? '' : f.end_date,
+                  }))
+                }}
+              />
             </div>
             <div>
               <label className="label">End Date</label>
-              <input type="date" className="input" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+              <input
+                type="date" className="input" value={form.end_date}
+                min={form.start_date ? nextDay(form.start_date) : undefined}
+                onChange={(e) => { setDateError(''); setForm({ ...form, end_date: e.target.value }) }}
+              />
             </div>
           </div>
+          {dateError && <p className="text-xs text-red-600 -mt-1">{dateError}</p>}
           <div>
             <label className="label">Notes</label>
             <textarea className="input" rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Additional notes..." />
