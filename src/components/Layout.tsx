@@ -1,8 +1,10 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthenContext'
+import { fetchNotifications, subscribeToNotifications } from '../lib/Notification'
 
-const navItems = [
+const baseNavItems = [
   { to: '/', label: 'Dashboard', icon: HomeIcon },
   { to: '/medications', label: 'Medications', icon: PillIcon },
   { to: '/reminders', label: 'Reminders', icon: ClockIcon },
@@ -16,25 +18,45 @@ const navItems = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const { profile } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => { setMobileOpen(false) }, [location.pathname])
+
+  useEffect(() => {
+    if (profile?.role !== 'caregiver' || !profile.id) {
+      setUnreadCount(0)
+      return
+    }
+    fetchNotifications(profile.id).then((rows) => {
+      setUnreadCount(rows.filter((n) => !n.is_read).length)
+    })
+    const unsubscribe = subscribeToNotifications(profile.id, () => {
+      setUnreadCount((c) => c + 1)
+    })
+    return unsubscribe
+  }, [profile?.role, profile?.id])
 
   async function handleLogout() {
     await supabase.auth.signOut()
     navigate('/login')
   }
 
+  const navItems = profile?.role === 'caregiver'
+    ? [...baseNavItems.slice(0, 1), { to: '/caregiver', label: 'Caregiver', icon: BellIcon }, ...baseNavItems.slice(1)]
+    : baseNavItems
+
   return (
     <div className="min-h-screen flex bg-slate-50">
       <aside className="hidden md:flex w-60 flex-col bg-white border-r border-slate-200 shrink-0">
-        <div className="flex items-center gap-2 px-5 h-16 border-b border-slate-200 bg-blue-600">
-          <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center text-white">
+        <div className="flex items-center gap-2 px-5 h-16 border-b border-slate-200">
+          <div className="w-9 h-9 rounded-lg bg-primary-600 flex items-center justify-center text-white">
             <CrossIcon />
           </div>
           <div>
-            <p className="font-semibold text-white leading-tight">MediRemind</p>
-            <p className="text-xs text-blue-100">Smart Medical Reminder</p>
+            <p className="font-semibold text-slate-800 leading-tight">MediRemind</p>
+            <p className="text-xs text-slate-400">Smart Medical Reminder</p>
           </div>
         </div>
         <nav className="flex-1 py-4 px-3 space-y-1">
@@ -42,11 +64,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             const active = location.pathname === item.to
             return (
               <Link key={item.to} to={item.to}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   active ? 'bg-primary-50 text-primary-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}>
-                <item.icon className="w-5 h-5" />
-                {item.label}
+                <span className="flex items-center gap-3">
+                  <item.icon className="w-5 h-5" />
+                  {item.label}
+                </span>
+                {item.to === '/caregiver' && unreadCount > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-error-500 text-white text-[10px] font-semibold">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </Link>
             )
           })}
@@ -62,14 +91,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-blue-600 border-b border-slate-200 h-14 flex items-center justify-between px-4">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-slate-200 h-14 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white">
+          <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center text-white">
             <CrossIcon />
           </div>
-          <span className="font-semibold text-white">MediRemind</span>
+          <span className="font-semibold text-slate-800">MediRemind</span>
         </div>
-        <button onClick={() => setMobileOpen((v) => !v)} className="p-2 rounded-lg hover:bg-blue-700 text-white" aria-label="Toggle menu">
+        <button onClick={() => setMobileOpen((v) => !v)} className="p-2 rounded-lg hover:bg-slate-100" aria-label="Toggle menu">
           <MenuIcon />
         </button>
       </div>
@@ -81,11 +110,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               const active = location.pathname === item.to
               return (
                 <Link key={item.to} to={item.to}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium ${
+                  className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium ${
                     active ? 'bg-primary-50 text-primary-700' : 'text-slate-600 hover:bg-slate-50'
                   }`}>
-                  <item.icon className="w-5 h-5" />
-                  {item.label}
+                  <span className="flex items-center gap-3">
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </span>
+                  {item.to === '/caregiver' && unreadCount > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-error-500 text-white text-[10px] font-semibold">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </Link>
               )
             })}
@@ -130,6 +166,9 @@ function ListIcon({ className = '' }: { className?: string }) {
 }
 function UserIcon({ className = '' }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+}
+function BellIcon({ className = '' }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
 }
 function CrossIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z" /></svg>

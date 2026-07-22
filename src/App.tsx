@@ -8,6 +8,7 @@ import Appointments from './pages/Appointments'
 import Contacts from './pages/Contacts'
 import History from './pages/History'
 import Profile from './pages/Profile'
+import Caregiver from './pages/Caregiver'
 import Login from './pages/login'
 import AlertProvider from './components/AlertProvider'
 import AuthProvider from './contexts/AuthenContext'
@@ -34,6 +35,7 @@ export default function App() {
                       <Route path="/contacts" element={<Contacts />} />
                       <Route path="/history" element={<History />} />
                       <Route path="/profile" element={<Profile />} />
+                      <Route path="/caregiver" element={<Caregiver />} />
                     </Routes>
                   </Layout>
                 </AlertProvider>

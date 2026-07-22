@@ -1,13 +1,18 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthenContext'
+import type { UserRole } from '../types'
+
+const LICENSE_PATTERN = /^CG-[0-9]{3,}$/
 
 export default function Login() {
   const { session, loading, signIn, signUp, signInWithGoogle } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [role, setRole] = useState<UserRole>('patient')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [licenseNumber, setLicenseNumber] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -35,10 +40,15 @@ export default function Login() {
       setError('Enter an email address.')
       return
     }
+    if (mode === 'signup' && role === 'caregiver' && !LICENSE_PATTERN.test(licenseNumber.trim().toUpperCase())) {
+      setError('Caregiver license number must look like CG-001 (CG- followed by 3+ digits).')
+      return
+    }
     setSubmitting(true)
-    const result = mode === 'signin'
-      ? await signIn(username.trim(), password)
-      : await signUp(username.trim(), email.trim(), password)
+    const result =
+      mode === 'signin'
+        ? await signIn(username.trim(), password)
+        : await signUp(username.trim(), email.trim(), password, role, licenseNumber.trim())
     setSubmitting(false)
 
     if (result.error) {
@@ -107,6 +117,27 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
+            {mode === 'signup' && (
+              <div>
+                <label className="label">I am a...</label>
+                <div className="flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setRole('patient')}
+                    className={`flex-1 py-1.5 rounded-md transition ${role === 'patient' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}
+                  >
+                    Patient
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('caregiver')}
+                    className={`flex-1 py-1.5 rounded-md transition ${role === 'caregiver' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}
+                  >
+                    Caregiver
+                  </button>
+                </div>
+              </div>
+            )}
             <div>
               <label className="label">Username</label>
               <input className="input" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="e.g. johndoe" autoFocus />
@@ -121,6 +152,21 @@ export default function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                 />
+              </div>
+            )}
+            {mode === 'signup' && role === 'caregiver' && (
+              <div>
+                <label className="label">Caregiver License Number</label>
+                <input
+                  className="input"
+                  value={licenseNumber}
+                  onChange={(e) => setLicenseNumber(e.target.value)}
+                  placeholder="e.g. CG-001"
+                />
+                <p className="text-xs text-slate-400 mt-1">
+                  Must match the format CG-### (e.g. CG-001). This is your identity as a caregiver —
+                  patients will use it to link you to their account.
+                </p>
               </div>
             )}
             <div>

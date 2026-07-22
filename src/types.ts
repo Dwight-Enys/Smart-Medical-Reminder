@@ -1,5 +1,7 @@
 export type MedicationForm = 'Tablet' | 'Capsule' | 'Syrup' | 'Injection' | 'Inhaler' | 'Drops' | 'Topical' | 'Other'
 
+export type UserRole = 'patient' | 'caregiver'
+
 export interface Profile {
   id: string
   username: string | null
@@ -9,6 +11,8 @@ export interface Profile {
   email: string | null
   phone: string | null
   timezone: string | null
+  role: UserRole
+  license_number: string | null
 }
 
 export interface Medication {
@@ -87,4 +91,31 @@ export interface MedicationHistory {
   confirmed_at: string | null
   created_at: string
   medication?: Medication
+}
+
+// ---- Caregiver system -------------------------------------------------
+
+export type CaregiverLinkStatus = 'active' | 'revoked'
+
+export interface CaregiverLink {
+  id: string
+  caregiver_id: string
+  patient_id: string
+  status: CaregiverLinkStatus
+  created_at: string
+  patient?: Profile
+  caregiver?: Profile
+}
+
+export interface CaregiverNotification {
+  id: string
+  caregiver_id: string
+  patient_id: string
+  medication_id: string | null
+  medication_name: string | null
+  status: DoseStatus
+  scheduled_time: string | null
+  message: string
+  is_read: boolean
+  created_at: string
 }
