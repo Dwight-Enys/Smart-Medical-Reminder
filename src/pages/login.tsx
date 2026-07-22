@@ -63,8 +63,20 @@ export default function Login() {
 
   async function handleGoogle() {
     setError(null)
+    
+    // If user is in signup mode and selected caregiver, validate license before redirecting
+    if (mode === 'signup' && role === 'caregiver') {
+      const trimmed = licenseNumber.trim().toUpperCase();
+      if (!LICENSE_PATTERN.test(trimmed)) {
+        setError('Please enter a valid caregiver license (e.g., CG-001) before signing up with Google.');
+        return;
+      }
+    }
+
     setGoogleLoading(true)
-    const result = await signInWithGoogle()
+    // Pass license number to signInWithGoogle if in caregiver signup mode
+    const result = await signInWithGoogle(mode === 'signup' && role === 'caregiver' ? licenseNumber : undefined)
+    
     if (result.error) {
       setError(result.error)
       setGoogleLoading(false)
@@ -100,27 +112,12 @@ export default function Login() {
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleGoogle}
-            disabled={googleLoading}
-            className="w-full flex items-center justify-center gap-2 border border-slate-300 rounded-lg py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition mb-4"
-          >
-            <GoogleIcon />
-            {googleLoading ? 'Redirecting...' : 'Continue with Google'}
-          </button>
-
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-px bg-slate-200 flex-1" />
-            <span className="text-xs text-slate-400">or</span>
-            <div className="h-px bg-slate-200 flex-1" />
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-3">
+          {/* Google Login Section */}
+          <div className="space-y-3 mb-4">
             {mode === 'signup' && (
               <div>
-                <label className="label">I am a...</label>
-                <div className="flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
+                <label className="label">Sign up as a...</label>
+                <div className="flex rounded-lg bg-slate-100 p-1 text-sm font-medium mb-3">
                   <button
                     type="button"
                     onClick={() => setRole('patient')}
@@ -136,8 +133,38 @@ export default function Login() {
                     Caregiver
                   </button>
                 </div>
+                {role === 'caregiver' && (
+                  <div className="mb-3">
+                    <label className="label">Enter License to continue with Google</label>
+                    <input
+                      className="input"
+                      value={licenseNumber}
+                      onChange={(e) => setLicenseNumber(e.target.value)}
+                      placeholder="e.g. CG-001"
+                    />
+                  </div>
+                )}
               </div>
             )}
+            
+            <button
+              type="button"
+              onClick={handleGoogle}
+              disabled={googleLoading}
+              className="w-full flex items-center justify-center gap-2 border border-slate-300 rounded-lg py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+            >
+              <GoogleIcon />
+              {googleLoading ? 'Redirecting...' : mode === 'signup' ? `Sign up as ${role} with Google` : 'Sign in with Google'}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-px bg-slate-200 flex-1" />
+            <span className="text-xs text-slate-400">or use email</span>
+            <div className="h-px bg-slate-200 flex-1" />
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div>
               <label className="label">Username</label>
               <input className="input" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="e.g. johndoe" autoFocus />
@@ -156,17 +183,13 @@ export default function Login() {
             )}
             {mode === 'signup' && role === 'caregiver' && (
               <div>
-                <label className="label">Caregiver License Number</label>
+                <label className="label">Caregiver License Number (for email signup)</label>
                 <input
                   className="input"
                   value={licenseNumber}
                   onChange={(e) => setLicenseNumber(e.target.value)}
                   placeholder="e.g. CG-001"
                 />
-                <p className="text-xs text-slate-400 mt-1">
-                  Must match the format CG-### (e.g. CG-001). This is your identity as a caregiver —
-                  patients will use it to link you to their account.
-                </p>
               </div>
             )}
             <div>

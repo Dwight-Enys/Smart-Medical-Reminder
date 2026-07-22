@@ -19,7 +19,7 @@ interface AuthState {
     role: UserRole,
     licenseNumber?: string
   ) => Promise<{ error: string | null }>
-  signInWithGoogle: () => Promise<{ error: string | null }>
+  signInWithGoogle: (licenseNumber?: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -50,17 +50,47 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }, [session, loadProfile])
 
   useEffect(() => {
+    // Initial session check
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       setLoading(false)
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    // Listen for Auth Changes
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       setSession(newSession)
+      
+      // LOGIC: Handle Google Sign-In Profile Creation
+      if (event === 'SIGNED_IN' && newSession?.user) {
+        // Check if profile already exists
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', newSession.user.id)
+          .maybeSingle();
+
+        if (!existingProfile) {
+          // New user from Google! Check if they provided a license before the redirect
+          const pendingLicense = localStorage.getItem('pending_caregiver_license');
+          const role: UserRole = pendingLicense ? 'caregiver' : 'patient';
+          
+          await supabase.from('profiles').insert({
+            id: newSession.user.id,
+            email: newSession.user.email,
+            full_name: newSession.user.user_metadata?.full_name || null,
+            role: role,
+            license_number: pendingLicense || null,
+          });
+          
+          // Clean up and load the newly created profile
+          localStorage.removeItem('pending_caregiver_license');
+          await loadProfile(newSession.user.id);
+        }
+      }
     })
 
     return () => listener.subscription.unsubscribe()
-  }, [])
+  }, [loadProfile])
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -121,7 +151,18 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     return { error: null }
   }
 
-  async function signInWithGoogle() {
+  async function signInWithGoogle(licenseNumber?: string) {
+    // Capture license BEFORE redirecting to Google
+    if (licenseNumber) {
+      const trimmed = licenseNumber.trim().toUpperCase();
+      if (!LICENSE_PATTERN.test(trimmed)) {
+        return { error: 'Invalid license format. Use CG-000' };
+      }
+      localStorage.setItem('pending_caregiver_license', trimmed);
+    } else {
+      localStorage.removeItem('pending_caregiver_license');
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin },
